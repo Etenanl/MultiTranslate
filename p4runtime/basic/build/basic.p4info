@@ -1,0 +1,123 @@
+tables {
+  preamble {
+    id: 33563189
+    name: "MyIngress.table_forward"
+    alias: "table_forward"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.srcAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  action_refs {
+    id: 16806509
+  }
+  action_refs {
+    id: 16805608
+  }
+  action_refs {
+    id: 16800438
+  }
+  action_refs {
+    id: 16800567
+  }
+  size: 1024
+}
+tables {
+  preamble {
+    id: 33615702
+    name: "MyIngress.table_save"
+    alias: "table_save"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.srcAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  action_refs {
+    id: 16806509
+  }
+  action_refs {
+    id: 16805608
+  }
+  action_refs {
+    id: 16800567
+  }
+  size: 1024
+}
+tables {
+  preamble {
+    id: 33610506
+    name: "MyIngress.table_redirect"
+    alias: "table_redirect"
+  }
+  match_fields {
+    id: 1
+    name: "standard_metadata.ingress_port"
+    bitwidth: 9
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  action_refs {
+    id: 16806509
+  }
+  action_refs {
+    id: 16805608
+  }
+  action_refs {
+    id: 16800567
+  }
+  size: 1024
+}
+actions {
+  preamble {
+    id: 16800567
+    name: "NoAction"
+    alias: "NoAction"
+  }
+}
+actions {
+  preamble {
+    id: 16805608
+    name: "MyIngress.drop"
+    alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 16800438
+    name: "MyIngress.packetin"
+    alias: "packetin"
+  }
+}
+actions {
+  preamble {
+    id: 16806509
+    name: "MyIngress.set_port"
+    alias: "set_port"
+  }
+  params {
+    id: 1
+    name: "port"
+    bitwidth: 9
+  }
+}
