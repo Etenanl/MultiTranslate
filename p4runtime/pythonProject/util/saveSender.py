@@ -12,22 +12,7 @@ class _Packet:
 
 def Callback(packet):
     if IP in packet and UDP in packet:
-        dst_ip = packet[IP].dst
-        # 源IP
-        src_ip = packet[IP].src
-
-        dst_port = packet[UDP].dport
-        value = ""
-        if packet.haslayer(Raw):
-            value = packet['Raw'].load
-
-        dst_mac = packet['Ether'].dst
-
-        src_mac = packet['Ether'].src
-
-
-    # 转发数据
-        forward_udp(dst_mac, src_mac, dst_ip, src_ip, dst_port, value)
+        sendp(packet, iface="he-eth0")
 
 
 
@@ -60,6 +45,6 @@ def Listening(ip='192.168.1.126', port='8888', count=-1, call=Callback):
     # connection, p4info_helper = _Connection.GetConnection()
     sniff(filter="udp and host "+ip, count=count, prn=call)
 if __name__ == '__main__':
-    ip = '192.168.101.4'
+    ip = '10.0.1.1'
     # connection, p4info_helper = _Connection.GetConnection()
     result = sniff(filter="udp and host "+ip, count=-1, prn=Callback)
