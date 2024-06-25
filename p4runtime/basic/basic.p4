@@ -3,7 +3,8 @@
 #include <v1model.p4>
 
 const bit<16> TYPE_IPV4 = 0x800;
-
+const bit<8>  TYPE_TCP = 0x6;
+const bit<88> XOR_KEY= 0x75737463787A3730356373;
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
@@ -33,6 +34,24 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+header tcp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
+    bit<3>  res;
+    bit<3>  ecn;
+    bit<6>  ctrl;
+    bit<16> window;
+    bit<16> checksum;
+    bit<16> urgentPtr;
+}
+
+header encrBody_t {
+    bit<88> data;
+}
+
 struct metadata {
     /* empty */
 }
@@ -40,6 +59,8 @@ struct metadata {
 struct headers {
     ethernet_t   ethernet;
     ipv4_t       ipv4;
+    tcp_t        tcp;
+    encrBody_t   encrBody;
 }
 
 /*************************************************************************
@@ -65,6 +86,14 @@ parser MyParser(packet_in packet,
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
+        transition select(hdr.ipv4.protocol) {
+            TYPE_TCP: parse_tcp;
+            default: accept;
+        }
+    }
+    state parse_tcp {
+        packet.extract(hdr.tcp);
+        packet.extract(hdr.encrBody);
         transition accept;
     }
 
@@ -98,6 +127,16 @@ control MyIngress(inout headers hdr,
     
     action set_port(egressSpec_t port) {
         standard_metadata.egress_spec = port;
+    }
+
+    action encr_packet() {
+        hdr.encrBody.data = hdr.encrBody.data ^ XOR_KEY;
+        hdr.tcp.res = 1;
+    }
+
+    action decr_packet() {
+        hdr.encrBody.data = hdr.encrBody.data ^ XOR_KEY;
+        hdr.tcp.res = 0;
     }
 
     table table_forward {
@@ -143,11 +182,49 @@ control MyIngress(inout headers hdr,
         default_action = NoAction;
     }
     
+    table table_encr_ingress {
+        key = {
+            hdr.ipv4.srcAddr: exact;
+            hdr.ipv4.dstAddr: exact;
+            standard_metadata.ingress_port: exact;
+        }
+        actions = {
+            encr_packet;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction;
+    }
+
+    table table_decr_ingress {
+        key = {
+            hdr.ipv4.srcAddr: exact;
+            hdr.ipv4.dstAddr: exact;
+            standard_metadata.ingress_port: exact;
+        }
+        actions = {
+            decr_packet;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction;
+    }
+
     apply {
         if (hdr.ipv4.isValid()) {
             table_forward.apply();
             table_save.apply();
             table_redirect.apply();
+            if(hdr.tcp.isValid()){
+                if(hdr.tcp.res == 0) {
+                    table_encr_ingress.apply();
+                }
+                if(hdr.tcp.res == 1) {
+                    table_decr_ingress.apply();
+                }
+            }
             hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         }
 
@@ -161,7 +238,59 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    apply {  }
+    action drop() {
+        mark_to_drop();
+    }
+    
+    action encr_packet() {
+        hdr.encrBody.data = hdr.encrBody.data ^ XOR_KEY;
+        hdr.tcp.res = 1;
+    }
+
+    action decr_packet() {
+        hdr.encrBody.data = hdr.encrBody.data ^ XOR_KEY;
+        hdr.tcp.res = 0;
+    }
+
+    table table_encr_egress {
+        key = {
+            hdr.ipv4.srcAddr: exact;
+            hdr.ipv4.dstAddr: exact;
+            standard_metadata.egress_port: exact;
+        }
+        actions = {
+            encr_packet;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction;
+    }
+
+    table table_decr_egress {
+        key = {
+            hdr.ipv4.srcAddr: exact;
+            hdr.ipv4.dstAddr: exact;
+            standard_metadata.egress_port: exact;
+        }
+        actions = {
+            decr_packet;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction;
+    }
+    apply {
+        if(hdr.tcp.isValid()){
+            if(hdr.tcp.res == 0){
+                table_encr_egress.apply();
+            }
+            if(hdr.tcp.res == 1){
+                table_decr_egress.apply();
+            }
+        }
+      }
 }
 
 /*************************************************************************
@@ -196,6 +325,8 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.tcp);
+        packet.emit(hdr.encrBody);
     }
 }
 

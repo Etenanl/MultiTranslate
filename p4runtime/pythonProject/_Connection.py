@@ -28,9 +28,9 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 
 def GetConnection(Address='127.0.0.1:50051', Device_id=0,
-                  Proto_dump_file='/home/myp4/Develop/p4runtime/basic/logs/' + 's1' + '-p4runtime-requests.txt',
-                  Info_file='/home/myp4/Develop/p4runtime/basic/build/basic.p4info',
-                  Json_file='/home/myp4/Develop/p4runtime/basic/build/basic.json'):
+                  Proto_dump_file='/home/myp4/MultiTranslate/p4runtime/basic/logs/' + 's1' + '-p4runtime-requests.txt',
+                  Info_file='/home/myp4/MultiTranslate/p4runtime/basic/build/basic.p4info',
+                  Json_file='/home/myp4/MultiTranslate/p4runtime/basic/build/basic.json'):
     connection = p4runtime_lib.bmv2.Bmv2SwitchConnection(
         address=Address,
         device_id=Device_id,
@@ -93,6 +93,61 @@ def AddTableRedirect(connection, p4info_helper, entry):
     )
     connection.WriteTableEntry(table_entry)
 
+def AddTableEncr_Ingress(connection,p4info_helper,entry):
+    matchMap ={}
+    matchMap['hdr.ipv4.srcAddr'] = (entry.srcAddr)
+    matchMap['hdr.ipv4.dstAddr'] = (entry.dstAddr)
+    matchMap['standard_metadata.ingress_port'] = (entry.ingressPort)
+    actionParMap = {}
+    table_entry = p4info_helper.buildTableEntry(
+        table_name='MyIngress.table_encr_ingress',
+        match_fields=matchMap,
+        action_name='MyIngress.encr_packet',
+        action_params=actionParMap,
+    )
+    connection.WriteTableEntry(table_entry)
+
+def AddTableEncr_Egress(connection,p4info_helper,entry):
+    matchMap ={}
+    matchMap['hdr.ipv4.srcAddr'] = (entry.srcAddr)
+    matchMap['hdr.ipv4.dstAddr'] = (entry.dstAddr)
+    matchMap['standard_metadata.egress_port'] = (entry.ingressPort)
+    actionParMap = {}
+    table_entry = p4info_helper.buildTableEntry(
+        table_name='MyEgress.table_encr_egress',
+        match_fields=matchMap,
+        action_name='MyEgress.encr_packet',
+        action_params=actionParMap,
+    )
+    connection.WriteTableEntry(table_entry)
+
+def AddTableDecr_Ingress(connection,p4info_helper,entry):
+    matchMap ={}
+    matchMap['hdr.ipv4.srcAddr'] = (entry.srcAddr)
+    matchMap['hdr.ipv4.dstAddr'] = (entry.dstAddr)
+    matchMap['standard_metadata.ingress_port'] = (entry.ingressPort)
+    actionParMap = {}
+    table_entry = p4info_helper.buildTableEntry(
+        table_name='MyIngress.table_decr_ingress',
+        match_fields=matchMap,
+        action_name='MyIngress.decr_packet',
+        action_params=actionParMap,
+    )
+    connection.WriteTableEntry(table_entry)
+
+def AddTableDecr_Egress(connection,p4info_helper,entry):
+    matchMap ={}
+    matchMap['hdr.ipv4.srcAddr'] = (entry.srcAddr)
+    matchMap['hdr.ipv4.dstAddr'] = (entry.dstAddr)
+    matchMap['standard_metadata.egress_port'] = (entry.ingressPort)
+    actionParMap = {}
+    table_entry = p4info_helper.buildTableEntry(
+        table_name='MyEgress.table_decr_egress',
+        match_fields=matchMap,
+        action_name='MyEgress.decr_packet',
+        action_params=actionParMap,
+    )
+    connection.WriteTableEntry(table_entry)
 
 def AddTableTest(connection, p4info_helper):
     matchMap = {}

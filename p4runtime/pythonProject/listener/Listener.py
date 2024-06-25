@@ -2,7 +2,7 @@
 
 from scapy.all import *
 
-from scapy.layers.inet import UDP, IP
+from scapy.layers.inet import UDP, IP ,TCP
 
 from scapy.layers.l2 import Ether
 
@@ -30,7 +30,7 @@ class _Packet:
 
 def Callback(packet):
 
-    if IP in packet and UDP in packet:
+    if IP in packet and (UDP in packet or TCP in packet):
 
         dst_ip = packet[IP].dst
 
@@ -101,11 +101,17 @@ def Callback(packet):
                         _Connection.AddTableSave(connection, p4info_helper,entry)
                     elif entry.tableName == 'table_redirect':
                         _Connection.AddTableRedirect(connection, p4info_helper,entry)
+                    elif entry.tableName == 'table_encr_ingress':
+                        _Connection.AddTableEncr_Ingress(connection, p4info_helper,entry)
+                    elif entry.tableName == 'table_encr_egress':
+                        _Connection.AddTableEncr_Egress(connection, p4info_helper,entry)   
+                    elif entry.tableName == 'table_decr_ingress':
+                        _Connection.AddTableDecr_Ingress(connection, p4info_helper,entry) 
+                    elif entry.tableName == 'table_decr_egress':
+                        _Connection.AddTableDecr_Egress(connection, p4info_helper,entry) 
                 finally:
                     pass
             
-
-
 
 
     # 转发数据

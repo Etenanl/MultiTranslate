@@ -4,8 +4,8 @@ from UsrPrograming import pipeline
 from Environment import Runtime
 
 class Packet:
-    src = "10.0.1.1"
-    dst = "10.0.3.3"
+    srcIP = "10.0.1.1"
+    dstIP = "10.0.3.3"
 
 packet = Packet()
 

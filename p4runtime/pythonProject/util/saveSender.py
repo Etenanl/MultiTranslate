@@ -1,50 +1,42 @@
 # coding=utf-8
 from scapy.all import *
-from scapy.layers.inet import UDP, IP
+from scapy.layers.inet import UDP, IP ,TCP
 from scapy.layers.l2 import Ether
+from collections import defaultdict
+import sys,StringIO
 
-class _Packet:
-    def __init__(self,srcIP='0,0,0,0',dstIP='0,0,0,0',port=0,protocol=0):
-        self.srcIP =srcIP
-        self.dstIP =dstIP
-        self.port =port
-        self.protocol=protocol
+sent_packets = defaultdict(bool)
+
+def save_packet(packet):
+    buf = StringIO.StringIO()
+    # 重定向
+    old_stdout = sys.stdout
+    sys.stdout = buf
+    packet.show2()
+    # 恢复标准输出
+    sys.stdout = old_stdout
+    output = buf.getvalue()
+    with open('captured_packets.txt', 'a') as file:
+        file.write(output + '\n\n')
 
 def Callback(packet):
-    if IP in packet and UDP in packet:
-        sendp(packet, iface="he-eth0")
+    global sent_packets
+    # 获取数据包的摘要信息，用于唯一标识一个数据包
+    packet_summary = packet.summary()
+    # 检查是否已经发送过这个数据包，如果已发送则直接返回
+    if sent_packets[packet_summary]:
+        return 
+    if IP in packet and (UDP in packet or TCP in packet):
+
+        packet.show2()
+        # 保存包信息到txt
+        save_packet(packet)
+
+        sent_packets[packet_summary]=True
+        sendp(packet, iface="h2-eth0")
 
 
-
-
-
-def forward_udp(dst_mac, src_mac, dst_ip, src_ip, dst_port, value):
-
-    # 创建以太网层
-    eth = Ether(dst=dst_mac, src=src_mac)
-    # 创建IP层
-    ip = IP(src=src_ip, dst=dst_ip)
-    # 创建UDP层
-    udp = UDP(dport=dst_port + 1)
-    # 创建一个UDP数据包
-    packet = eth / ip / udp / Raw(value)
-
-    # 通过原始套接字发送数据包，iface:指定网卡名称
-    sendp(packet, iface="WLAN")
-
-
-def Listening(ip='192.168.1.126', port='8888', count=-1, call=Callback):
-    # 目标地址
-
-    # 目标端口
-
-    # 监听的规则，iface：监听的网卡名称
-    print("start")
-
-    global connection, p4info_helper
-    # connection, p4info_helper = _Connection.GetConnection()
-    sniff(filter="udp and host "+ip, count=count, prn=call)
 if __name__ == '__main__':
     ip = '10.0.1.1'
     # connection, p4info_helper = _Connection.GetConnection()
-    result = sniff(filter="udp and host "+ip, count=-1, prn=Callback)
+    result = sniff(filter="tcp or udp and host "+ip, count=-1, prn=Callback)

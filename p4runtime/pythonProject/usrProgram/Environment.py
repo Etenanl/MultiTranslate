@@ -81,7 +81,18 @@ class Runtime:
         self.table.append(entry2)
     
     def encr(self, name, port):
+        tmpSrcAddr = ''
+        tmpDstAddr = ''
+        if self.stack[0][0] == SRCTYPE :
+            tmpSrcAddr = self.stack[0][1]
+            tmpDstAddr = self.stack[1][1]
+        else:
+            tmpDstAddr = self.stack[0][1]
+            tmpSrcAddr = self.stack[1][1]
+
         entry = Entry()
+        entry.srcAddr = self.ipHexAddress(tmpSrcAddr)
+        entry.dstAddr = self.ipHexAddress(tmpDstAddr)
         if name == EGRESS :
             entry.tableName = "table_encr_egress"
         else:
@@ -92,7 +103,18 @@ class Runtime:
         self.table.append(entry)
 
     def decr(self, name, port):
+        tmpSrcAddr = ''
+        tmpDstAddr = ''
+        if self.stack[0][0] == SRCTYPE :
+            tmpSrcAddr = self.stack[0][1]
+            tmpDstAddr = self.stack[1][1]
+        else:
+            tmpDstAddr = self.stack[0][1]
+            tmpSrcAddr = self.stack[1][1]
+
         entry = Entry()
+        entry.srcAddr = self.ipHexAddress(tmpSrcAddr)
+        entry.dstAddr = self.ipHexAddress(tmpDstAddr)
         if name == EGRESS :
             entry.tableName = "table_decr_egress"
         else:
